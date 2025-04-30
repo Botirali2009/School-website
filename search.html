@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <title>Qidiruv</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      background: url('img/carousel-1.jpg') no-repeat center center/cover;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 40px;
+    }
+
+    .search-box {
+      width: 600px;
+      max-width: 90%;
+      position: sticky;
+      top: 20px;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(4px);
+      padding: 10px 20px;
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-box input {
+      flex-grow: 1;
+      border: none;
+      outline: none;
+      font-size: 18px;
+      padding: 10px 12px;
+      border-radius: 50px;
+      background: transparent;
+      color: #333;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .search-box button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 20px;
+      color: #333;
+      padding-left: 10px;
+    }
+
+    .results {
+      width: 600px;
+      max-width: 90%;
+      margin-top: 20px;
+      
+    }
+
+    .result-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 15px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .result-card:hover {
+      transform: scale(1.01);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+
+    .result-card h3 {
+      margin: 0 0 10px;
+      color: #2b63c6;
+    }
+
+    .history {
+      margin-top: 20px;
+      max-width: 600px;
+      width: 90%;
+      white-space: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+      text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      scrollbar-width: none;
+    }
+
+    .history::-webkit-scrollbar {
+      display: none;
+    }
+
+    .history-item {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 6px 12px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      margin: 5px;
+      font-size: 14px;
+      color: white;
+      position: relative;
+      transition: 0.2s;
+    }
+
+    .history-item:hover {
+      background: rgba(100, 149, 237, 0.4);
+    }
+
+    .delete-btn {
+      display: none;
+      position: absolute;
+      right: 6px;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .history-item:hover .delete-btn {
+      display: inline;
+    }
+
+
+
+    
+    .history-item {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  position: relative;
+  padding-right: 24px; /* X tugmasi sig‘sin deb */
+}
+
+.delete-btn {
+  position: absolute;
+  right: 4px;
+  display: none;
+}
+
+.history-item:hover .delete-btn {
+  display: inline;
+}
+
+
+
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Izlayotganingizni kiriting...">
+      <button onclick="runSearch()"><i class="fa fa-search"></i></button>
+    </div>
+
+    <div class="history" id="searchHistory"></div>
+    <div class="results" id="resultsContainer"></div>
+  </div>
+
+  <script>
+    const data = [
+      {
+        type: "teacher",
+        title: "Oybek Qobulov",
+        description: "Maktab direktori",
+        keywords: "oybek qobulov fizik ustoz",
+        id: "qobulov"
+      },
+      {
+        type: "teacher",
+        title: "Sevara G‘ulomova",
+        description: "Informatika o‘qituvchisi",
+        keywords: "sevara gulomova informatika",
+        id: "sevara_gulomova"
+      },
+      {
+        type: "teacher",
+        title: "Dilshod Ismoilov",
+        description: "Matematika o‘qituvchisi",
+        keywords: "dilshod ismoilov matematika",
+        id: "dilshod_ismoilov"
+      },
+      {
+        type: "book",
+        title: "Boburnoma",
+        description: "Z.M. Bobur tomonidan yozilgan tarixiy asar.",
+        keywords: "bobur boburnoma tarix",
+        id: "boburnoma"
+      },
+      {
+        type: "book",
+        title: "Alpomish",
+        description: "O‘zbek xalq dostoni",
+        keywords: "alpomish xalq doston",
+        id: "alpomish"
+      }
+    ];
+
+    function getQuery() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("q") || "";
+    }
+
+    function renderResults(query) {
+      const container = document.getElementById("resultsContainer");
+      const results = data.filter(item =>
+        item.title.toLowerCase().includes(query.toLowerCase()) ||
+        item.description.toLowerCase().includes(query.toLowerCase()) ||
+        item.keywords.toLowerCase().includes(query.toLowerCase())
+      );
+
+      if (!query.trim()) {
+        container.innerHTML = "";
+        return;
+      }
+
+      if (results.length === 0) {
+        container.innerHTML = "<div class='result-card'>Hech narsa topilmadi.</div>";
+        return;
+      }
+
+      container.innerHTML = results.map(item => `
+        <div class="result-card" onclick="location.href='${item.type === 'teacher' ? 'team.html' : 'book.html'}#${item.id}'">
+          <h3>${item.title}</h3>
+          <p>${item.description}</p>
+        </div>
+      `).join("");
+    }
+
+    function renderHistory() {
+      const hist = JSON.parse(localStorage.getItem("searchHistory") || "[]");
+      const container = document.getElementById("searchHistory");
+      container.innerHTML = "";
+      hist.forEach((item, index) => {
+        container.innerHTML += `
+          <span class="history-item" onclick="searchAgain('${item}')">
+            ${item}
+            <button onclick="deleteHistory(${index}); event.stopPropagation();" class="delete-btn">×</button>
+          </span>`;
+      });
+    }
+
+    function deleteHistory(index) {
+      let hist = JSON.parse(localStorage.getItem("searchHistory") || "[]");
+      hist.splice(index, 1);
+      localStorage.setItem("searchHistory", JSON.stringify(hist));
+      renderHistory();
+    }
+
+    function searchAgain(value) {
+      document.getElementById("searchInput").value = value;
+      runSearch();
+    }
+
+    function runSearch() {
+      const value = document.getElementById("searchInput").value;
+      if (value.trim()) {
+        let hist = JSON.parse(localStorage.getItem("searchHistory") || "[]");
+        if (!hist.includes(value)) {
+          hist.unshift(value);
+          localStorage.setItem("searchHistory", JSON.stringify(hist));
+        }
+        window.history.replaceState(null, "", "?q=" + encodeURIComponent(value));
+        renderResults(value);
+        renderHistory();
+      }
+    }
+
+    const q = getQuery();
+    if (q) {
+      document.getElementById("searchInput").value = q;
+      renderResults(q);
+    }
+    renderHistory();
+
+    document.getElementById("searchInput").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") runSearch();
+    });
+
+
+
+
+
+    document.addEventListener("keydown", function (e) {
+  if (e.ctrlKey && e.key === "u") {
+    e.preventDefault();
+    alert("Kodlarimiz maxfiy 😎");
+  }
+});
+
+
+
+document.addEventListener('keydown', function (e) {
+  if (
+    e.key === "F12" ||
+    (e.ctrlKey && e.shiftKey && e.key === "I") ||
+    (e.ctrlKey && e.shiftKey && e.key === "J") ||
+    (e.ctrlKey && e.key === "U")
+  ) {
+    e.preventDefault();
+    alert("Kodga ruxsat yo‘q 😉");
+  }
+});
+  </script>
+
+</body>
+</html>
